@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스마트 타이어 프로젝트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            background-color: #f4f8fb;
+            color: #333;
+        }
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: #dbe7f3;
+            color: #333;
+            padding: 10px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        nav > div {
+            position: relative;
+        }
+        nav a {
+            text-decoration: none;
+            color: #0b3954;
+            padding: 5px 10px;
+            transition: background 0.3s, color 0.3s;
+        }
+        nav a:hover {
+            background: #0b3954;
+            color: #fff;
+        }
+        .dropdown {
+            position: absolute;
+            display: none;
+            top: 100%;
+            left: 0;
+            background: #dbe7f3;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 10px 0;
+            z-index: 1000;
+        }
+        .dropdown a {
+            display: block;
+            padding: 5px 20px;
+            white-space: nowrap;
+        }
+        nav > div:hover .dropdown {
+            display: block;
+        }
+        .container {
+            padding: 80px 20px 20px;
+        }
+        section {
+            padding: 20px 0;
+        }
+        section h2, section h3 {
+            color: #0b3954;
+            border-bottom: 2px solid #dbe7f3;
+            padding-bottom: 5px;
+        }
+        .image {
+            width: 100%;
+            max-width: 600px;
+            height: auto;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-top: 10px;
+        }
+        .popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+        }
+        .popup img {
+            max-width: 90%;
+            height: auto;
+            border-radius: 5px;
+        }
+        .popup:target {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <nav>
+        <a href="#overview">프로젝트 개요</a>
+        <a href="#idea">메인 아이디어</a>
+        <div>
+            <a href="#hardware">하드웨어 구성</a>
+            <div class="dropdown">
+                <a href="#esp32">ESP32</a>
+                <a href="#raspberry">라즈베리파이</a>
+            </div>
+        </div>
+        <div>
+            <a href="#software">소프트웨어</a>
+            <div class="dropdown">
+                <a href="#data-collection">데이터 수집</a>
+                <a href="#preprocessing">데이터 전처리</a>
+                <a href="#transmission">데이터 전송</a>
+                <a href="#analysis">데이터 분석</a>
+            </div>
+        </div>
+        <a href="#app">앱 개발</a>
+        <a href="#plan">단계별 계획</a>
+    </nav>
+</header>
+
+<div class="container">
+    <section id="overview">
+        <h2>프로젝트 개요</h2>
+        <p>스마트 타이어 프로젝트는 차량 타이어의 상태를 실시간으로 모니터링하여 안전성을 높이기 위해 시작되었습니다. 압전 소자 센서를 활용하여 타이어의 진동과 압력 변화를 감지하고, 이를 기반으로 타이어 상태를 분석하여 스마트폰 앱으로 알림을 제공하는 것이 목적입니다.</p>
+        <a href="#popup-overview">
+            <img src="images/project_overview.jpg" alt="프로젝트 개요 이미지" class="image">
+        </a>
+        <div id="popup-overview" class="popup">
+            <img src="images/project_overview.jpg" alt="프로젝트 개요 이미지">
+        </div>
+    </section>
+
+    <section id="idea">
+        <h2>메인 아이디어</h2>
+        <p>압전 센서를 이용하여 타이어 상태를 실시간으로 모니터링하고, 수집된 데이터를 무선으로 서버에 전송합니다. 이 데이터를 머신러닝을 통해 분석하여 스마트폰 앱으로 알림을 제공하는 시스템입니다. 주요 하드웨어로는 Murata 7BB-20-3 압전 센서, Raspberry Pi 4, ESP32-C3 Arduino 모듈이 사용되었습니다.</p>
+        <p>이 시스템은 타이어 마모 및 이상 진동을 조기에 감지하여 사고를 예방하고, 사용자가 타이어 상태를 쉽게 모니터링할 수 있도록 지원합니다.</p>
+        <img src="images/main_idea.jpg" alt="메인 아이디어 이미지" class="image">
+        <div id="popup-idea" class="popup">
+            <img src="images/main_idea.jpg" alt="메인 아이디어 이미지">
+        </div>
+    </section>
+
+    <section id="hardware">
+        <h2>하드웨어 구성</h2>
+        <p>하드웨어 구성 상세:</p>
+        <ul>
+            <li><strong>ESP32:</strong> 센서 데이터 수집 및 전처리</li>
+            <li><strong>Raspberry Pi 4:</strong> 데이터 분석 및 시각화</li>
+            <li><strong>Murata 7BB-20-3:</strong> 압력과 진동 감지</li>
+            <li><strong>TP4056 충전 모듈:</strong> 리튬 폴리머 배터리 충전 관리</li>
+        </ul>
+    </section>
+
+    <section id="esp32">
+        <h3>ESP32</h3>
+        <p>ESP32는 센서 데이터를 수집하고...</p>
+        <a href="#popup-hardware1">
+            <img src="images/hardware_setup1.jpg" alt="하드웨어 구성 이미지 1" class="image">
+        </a>
+        <div id="popup-hardware1" class="popup">
+            <img src="images/hardware_setup1.jpg" alt="하드웨어 구성 이미지 1">
+        </div>
+        <a href="#popup-hardware2">
+            <img src="images/hardware_setup2.jpg" alt="하드웨어 구성 이미지 2" class="image">
+        </a>
+        <div id="popup-hardware2" class="popup">
+            <img src="images/hardware_setup2.jpg" alt="하드웨어 구성 이미지 2">
+        </div>
+    </section>
+
+    <section id="raspberry">
+        <h3>라즈베리파이</h3>
+        <p>라즈베리파이는 데이터 분석과...</p>
+        <a href="#popup-hardware3">
+            <img src="images/hardware_raspberry.jpg" alt="라즈베리파이 이미지" class="image">
+        </a>
+        <div id="popup-hardware3" class="popup">
+            <img src="images/hardware_raspberry.jpg" alt="라즈베리파이 이미지">
+        </div>
+    </section>
+
+    <section id="software">
+    <section id="data-collection">
+        <h2>소프트웨어 및 데이터 처리</h2>
+        <p>ESP32는 압전 센서로부터 데이터를 수집하고, 이를 전처리하여 MQTT 프로토콜을 통해 서버로 전송합니다. 서버에서는 머신러닝 모델을 사용하여 타이어 상태를 분석하고, 결과를 사용자에게 시각적으로 제공하는 시스템입니다.</p>
+        <p>주요 소프트웨어 기능:</p>
+        <ul>
+            <li>데이터 수집: 압전 센서로부터 실시간 데이터 수집</li>
+            <li>데이터 전처리: 필터링 및 노이즈 제거</li>
+            <li>데이터 전송: MQTT 프로토콜을 사용하여 서버에 전송</li>
+            <li>데이터 분석: 머신러닝 모델을 사용하여 타이어 상태 진단</li>
+        </ul>
+    </section>
+
+    <section id="data-collection">
+        <h3>데이터 수집</h3>
+        <p>센서로 부터 데이터를 수집...</p>
+         <a href="#popup-software1">
+            <img src="images/software_data_collection.jpg" alt="데이터 수집 이미지" class="image">
+        </a>
+        <div id="popup-software1" class="popup">
+            <img src="images/software_data_collection.jpg" alt="데이터 수집 이미지">
+        </div>
+    </section>
+
+    <section id="preprocessing">
+        <h3>데이터 전처리</h3>
+        <p>수집된 데이터는 노이즈 제거와 정규화 과정을 거칩니다...</p>
+        <a href="#popup-software2">
+            <img src="images/software_preprocessing.jpg" alt="데이터 전처리 이미지" class="image">
+        </a>
+        <div id="popup-software2" class="popup">
+            <img src="images/software_preprocessing.jpg" alt="데이터 전처리 이미지">
+        </div>
+    </section>
+
+    <section id="transmission">
+        <h3>데이터 전송</h3>
+        <p>MQTT 프로토콜을 사용하여 데이터를 서버로 전송합니다...</p>
+        <a href="#popup-software3">
+            <img src="images/software_transmission.jpg" alt="데이터 전송 이미지" class="image">
+        </a>
+        <div id="popup-software3" class="popup">
+            <img src="images/software_transmission.jpg" alt="데이터 전송 이미지">
+        </div>
+    </section>
+
+    <section id="analysis">
+        <h3>데이터 분석</h3>
+        <p>서버에서 머신러닝 모델을 통해 타이어 상태를 분석합니다...</p>
+        <a href="#popup-software4">
+            <img src="images/software_analysis.jpg" alt="데이터 분석 이미지" class="image">
+        </a>
+        <div id="popup-software4" class="popup">
+            <img src="images/software_analysis.jpg" alt="데이터 분석 이미지">
+        </div>
+    </section>
+
+    <section id="app">
+        <h2>앱 개발</h2>
+        <p>Flutter를 사용하여 앱을 개발 중입니다...</p>
+        <a href="#popup-app">
+            <img src="images/app_development.jpg" alt="앱 개발 진행" class="image">
+        </a>
+        <div id="popup-app" class="popup">
+            <img src="images/app_development.jpg" alt="앱 개발 진행">
+        </div>
+    </section>
+
+    <section id="plan">
+        <h2>단계별 진행 계획</h2>
+        <p>프로젝트는 다음과 같은 단계로 진행합니다:</p>
+        <ul>
+            <li>기획 및 설계: 프로젝트 방향 설정 및 하드웨어, 소프트웨어 설계</li>
+            <li>하드웨어 프로토타입 구축: 센서 연결 및 초기 테스트</li>
+            <li>데이터 수집 및 분석: 실시간 데이터 수집과 초기 분석</li>
+            <li>머신러닝 모델 설계 및 앱 개발: 모델 학습 및 테스트, 앱 통합</li>
+            <li>통합 및 테스트: 시스템 최적화 및 최종 테스트</li>
+        </ul>
+        <a href="#popup-plan">
+            <img src="images/project_plan.jpg" alt="단계별 계획 이미지" class="image">
+        </a>
+        <div id="popup-plan" class="popup">
+            <img src="images/project_plan.jpg" alt="단계별 계획 이미지">
+        </div>
+    </section>
+</div>
+
+</body>
+</html>
