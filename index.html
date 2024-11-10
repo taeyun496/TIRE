@@ -70,35 +70,55 @@
             border-bottom: 2px solid #dbe7f3;
             padding-bottom: 5px;
         }
-        .image {
-            width: 100%;
-            max-width: 600px;
-            height: auto;
-            cursor: pointer;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-top: 10px;
-        }
-        .popup {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            justify-content: center;
-            align-items: center;
-        }
-        .popup img {
-            max-width: 90%;
-            height: auto;
-            border-radius: 5px;
-        }
-        .popup:target {
-            display: flex;
-        }
+
+.thumbnail {
+    width: 80%;
+    height: auto;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.popup {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.popup-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 90%;
+}
+
+.popup img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+}
+
+.close-popup {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    color: #fff;
+    text-decoration: none;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
     </style>
 </head>
 <body>
@@ -110,12 +130,12 @@
         <div>
             <a href="#hardware">하드웨어 구성</a>
             <div class="dropdown">
-                <a href="#esp32">ESP32</a>
+                <a href="#esp32">ESP32 및 센서</a>
                 <a href="#raspberry">라즈베리파이</a>
             </div>
         </div>
         <div>
-            <a href="#software">소프트웨어</a>
+            <a href="#software">소프트웨어 및 데이터</a>
             <div class="dropdown">
                 <a href="#data-collection">데이터 수집</a>
                 <a href="#preprocessing">데이터 전처리</a>
@@ -132,61 +152,58 @@
     <section id="overview">
         <h2>프로젝트 개요</h2>
         <p>스마트 타이어 프로젝트는 차량 타이어의 상태를 실시간으로 모니터링하여 안전성을 높이기 위해 시작되었습니다. 압전 소자 센서를 활용하여 타이어의 진동과 압력 변화를 감지하고, 이를 기반으로 타이어 상태를 분석하여 스마트폰 앱으로 알림을 제공하는 것이 목적입니다.</p>
-        <a href="#popup-overview">
-            <img src="images/project_overview.jpg" alt="프로젝트 개요 이미지" class="image">
-        </a>
-        <div id="popup-overview" class="popup">
-            <img src="images/project_overview.jpg" alt="프로젝트 개요 이미지">
-        </div>
-    </section>
 
+        <p>제작의 용이성을 위해 자전거 바퀴로 프로토타입을 만들었습니다.</p>
+    </section>
     <section id="idea">
         <h2>메인 아이디어</h2>
-        <p>압전 센서를 이용하여 타이어 상태를 실시간으로 모니터링하고, 수집된 데이터를 무선으로 서버에 전송합니다. 이 데이터를 머신러닝을 통해 분석하여 스마트폰 앱으로 알림을 제공하는 시스템입니다. 주요 하드웨어로는 Murata 7BB-20-3 압전 센서, Raspberry Pi 4, ESP32-C3 Arduino 모듈이 사용되었습니다.</p>
+        <p>압전 센서를 이용하여 실시간으로 데이터를 수집하고, 수집된 데이터를 전처리하여 무선으로 서버에 전송합니다. 이 데이터를 머신러닝을 통해 분석하여 스마트폰 앱으로 알림을 제공하는 시스템입니다. 주요 하드웨어로는 Murata 7BB-20-3 압전 센서, ESP32-C3 Arduino 모듈, Raspberry Pi 4가 사용되었습니다.</p>
         <p>이 시스템은 타이어 마모 및 이상 진동을 조기에 감지하여 사고를 예방하고, 사용자가 타이어 상태를 쉽게 모니터링할 수 있도록 지원합니다.</p>
-        <img src="images/main_idea.jpg" alt="메인 아이디어 이미지" class="image">
-        <div id="popup-idea" class="popup">
-            <img src="images/main_idea.jpg" alt="메인 아이디어 이미지">
+        <div class="image-container" data-src="images/main_idea.jpg" data-alt="...">
+            <img src="images/main_idea.jpg" class="thumbnail" alt="...">
         </div>
     </section>
 
     <section id="hardware">
         <h2>하드웨어 구성</h2>
-        <p>하드웨어 구성 상세:</p>
+        <p>주요 하드웨어 구성:</p>
         <ul>
             <li><strong>ESP32:</strong> 센서 데이터 수집 및 전처리</li>
             <li><strong>Raspberry Pi 4:</strong> 데이터 분석 및 시각화</li>
             <li><strong>Murata 7BB-20-3:</strong> 압력과 진동 감지</li>
             <li><strong>TP4056 충전 모듈:</strong> 리튬 폴리머 배터리 충전 관리</li>
         </ul>
+        <p>글루건으로 붙인 부분은 전기가 통하지 않습니다. 글루건의 주요 성분은 전기를 전도하지 않는 물질로 구성되어 있어 절연체 역할을 합니다. 따라서 간단한 전선 고정이나 절연 목적으로 사용할 수 있습니다.</p>
+        <p>타이어가 끼워지는 림 부분에 압전 센서를 글루건으로 고정하고, 스포크 부분에 ESP32 모듈을 글루건이나 3D프린터 등으로 제작한 케이스로 고정합니다.</p>
+        <p>안장 아래 부분 등 구르지 않는 부분에 라즈베리파이 보드를 고정합니다.</p>
     </section>
 
     <section id="esp32">
-        <h3>ESP32</h3>
-        <p>ESP32는 센서 데이터를 수집하고...</p>
-        <a href="#popup-hardware1">
-            <img src="images/hardware_setup1.jpg" alt="하드웨어 구성 이미지 1" class="image">
-        </a>
-        <div id="popup-hardware1" class="popup">
-            <img src="images/hardware_setup1.jpg" alt="하드웨어 구성 이미지 1">
+        <h3>ESP32 및 센서</h3>
+        <p>ESP32는 센서 데이터를 수집하고 전처리를 하여 서버로 데이터를 무선 전송합니다.</p>
+        <p>ESP32는 6개의 아날로그 12bit 입력을 가집니다. 12bit 데이터이면 우리 프로젝트에 충분한 분해능을 제공하고 4개의 센서를 고려하고 있었기에 6개의 자체 ADC를 가지고 있는 이 아두이노 모델이 프로젝트에 적합하다고 봅니다.</p>
+        <p>압전센서는 무라타 7BB 시리즈의 20-3 압전센서를 사용합니다.</p>
+        <div class="image-container" data-src="images/센서결선.jpg" data-alt="센서 결선">
+            <img src="images/센서결선.jpg" class="thumbnail" alt="센서 결선">
         </div>
-        <a href="#popup-hardware2">
-            <img src="images/hardware_setup2.jpg" alt="하드웨어 구성 이미지 2" class="image">
-        </a>
-        <div id="popup-hardware2" class="popup">
-            <img src="images/hardware_setup2.jpg" alt="하드웨어 구성 이미지 2">
+        <p></p>
+        <p>센서를 테스트한 결과 지속 시간이 짧아 정확하지는 않지만 -4V에서 15V 정도의 전압이 출력되었습니다.</p>
+        <p>ESP32는 입력이 3.3V를 초과하는 경우 파손이 발생하고, 0.3V에서 2.8V 사이 전압에서 ADC 동작을 권장하고 있습니다.(이를 벗어난는 범위에서는 오차/포화 문제 발생)</p>
+        <p>따라서 저항으로 전압 분배를 통해 범위를 입력가능한 전압 영역으로 가져오고 전압 스파이크를 예방하기 위해 제너다이오드와 음전압을 잘라내기 위해 다이오드를 사용합니다.</p>
+        <div class="image-container" data-src="images/배터리결선.jpg" data-alt="...">
+            <img src="images/배터리결선.jpg" class="thumbnail" alt="...">
         </div>
+        <p>배터리 충전 결선은 위와 같이 합니다. TP4056 리튬배터리 충전모듈을 사용하며 3.7V, 1000mAh의 리튬 폴리머 배터리를 사용합니다.</p>
+        <p>ESP32의 VUSB단자와 충전 모듈의 충전 전원 +단지에 연결하여 ESP32에 USB가 연결되었을 때 충전 모듈에 전원이 공급될 수 있도록 합니다. ESP32의 USB포트로 충전과 코드 업데이트를 모두 할 수 있습니다.</p>
+        <p>위의 결선은 ESP32의 Vin 단자가 VUSB 단자와 전원부에 다이오드를 통해 연결되었기에 가능합니다. </p>
     </section>
 
     <section id="raspberry">
         <h3>라즈베리파이</h3>
-        <p>라즈베리파이는 데이터 분석과...</p>
-        <a href="#popup-hardware3">
-            <img src="images/hardware_raspberry.jpg" alt="라즈베리파이 이미지" class="image">
-        </a>
-        <div id="popup-hardware3" class="popup">
-            <img src="images/hardware_raspberry.jpg" alt="라즈베리파이 이미지">
-        </div>
+        <p>라즈베리파이는 데이터 분석과 앱으로 데이터를 전송하는 역할을 합니다.</p>
+        <p>라즈베리파이의 전원 공급은 리튬 배터리를 통해서 합니다. 18650 리튬 배터리는 원통형의 배터리로 재충전이 가능합니다. USB단자가 있는 배터리 홀더를 통해 단순하게 전력을 공급 받습니다.</p>
+        <p>18650 배터리의 용량은 2000mAh에서 3500mAh 사이로 전력 사용을 3W 정도로 계산을 하여도 3시간 이상 사용이 가능합니다.</p>
+
     </section>
 
     <section id="software">
@@ -196,65 +213,65 @@
         <p>주요 소프트웨어 기능:</p>
         <ul>
             <li>데이터 수집: 압전 센서로부터 실시간 데이터 수집</li>
-            <li>데이터 전처리: 필터링 및 노이즈 제거</li>
+            <li>데이터 전처리: 필터링 및 정규화</li>
             <li>데이터 전송: MQTT 프로토콜을 사용하여 서버에 전송</li>
             <li>데이터 분석: 머신러닝 모델을 사용하여 타이어 상태 진단</li>
         </ul>
+        <p>ESP32에서의 전체 알고리즘</p>
+        <div class="image-container" data-src="images/esp32fc.jpg" data-alt="...">
+            <img src="images/esp32fc.jpg" class="thumbnail" alt="...">
+        </div>
+        <p>라즈베리파이 보드에서의 전체 알고리즘</p>
+        <div class="image-container" data-src="images/rbfc.jpg" data-alt="...">
+            <img src="images/rbfc.jpg" class="thumbnail" alt="...">
+        </div>
     </section>
 
     <section id="data-collection">
         <h3>데이터 수집</h3>
-        <p>센서로 부터 데이터를 수집...</p>
-         <a href="#popup-software1">
-            <img src="images/software_data_collection.jpg" alt="데이터 수집 이미지" class="image">
-        </a>
-        <div id="popup-software1" class="popup">
-            <img src="images/software_data_collection.jpg" alt="데이터 수집 이미지">
-        </div>
+        <p>센서로 부터 데이터를 수집해서 전처리 함수에 대입할 수 있도록 변수에 저장합니다.</p>
+
     </section>
 
     <section id="preprocessing">
         <h3>데이터 전처리</h3>
-        <p>수집된 데이터는 노이즈 제거와 정규화 과정을 거칩니다...</p>
-        <a href="#popup-software2">
-            <img src="images/software_preprocessing.jpg" alt="데이터 전처리 이미지" class="image">
-        </a>
-        <div id="popup-software2" class="popup">
-            <img src="images/software_preprocessing.jpg" alt="데이터 전처리 이미지">
+        <p>수집된 데이터는 노이즈 제거와 정규화 과정 등의 전처리 과정을 거칩니다.</p>
+        <p>고려한 전처리 과정은 노이즈 제거와 정규화 피크 감지, 이상값 제거 등이 있었습니다. 노이즈 제거와 정규화는 머신러닝 과정에서 학습 효율과 분석 효율성 측면에서 필수라고 보았고, 피크 감지 또한 머신 러닝 모델이 충분히 판단할 수 있는 부분이지만 더 마찬가지로 효율에 도움이 되리라 보았습니다. 이상값 제거 또한 한다면 더 효율적인 학습과 분석을 할 수 있으리라 생각하였지만 필요한 데이터 또한 제거될 수 있을 것 같다는 점과 너무 많은 전처리 과정을 거치면 전처리에 시간이 더 소요되어 아래 세 가지 전처리 과정만을 가집니다.</p>
+        <ul>
+            <li>필터: 이동 평균 필터와 저역 통과 필터를 고려하였으며 구현이 쉬운 이동 평균 필터로 노이즈 제거를 합니다.</li>
+        <div class="image-container" data-src="images/.jpg" data-alt="필터 함수 플로우 차트">
+            <img src="images/.jpg" class="thumbnail" alt="필터 함수 플로우 차트">
         </div>
+            <li>정규화: 최소 0에서 최대 1로 정규화합니다. 추후 값들이 평균적으로 너무 작거나 크다면 최댓값을 1로 하는 대신 평균을 1로 하거나 또는 0을 평균으로 하여 편차를 1로 설정합니다.</li>
+        <div class="image-container" data-src="images/.jpg" data-alt="정규화 함수 플로우 차트">
+            <img src="images/.jpg" class="thumbnail" alt="정규화 함수 플로우 차트">
+        </div>
+            <li>피크 감지: 특정 값을 초과하는 경우를 피크로 판단하고 피크가 발생한 것을 하나의 이벤트로 데이터에 추가합니다. 평균 또는 편차를 1로 설정하는 경우 2를 초과하는 경우 등이 피크가 될 수 있습니다.</li>
+        <div class="image-container" data-src="images/.jpg" data-alt="피크 감지 플로우 차트">
+            <img src="images/.jpg" class="thumbnail" alt="피크 감지 플로우 차트">
+        </div>
+	</ul>
     </section>
 
     <section id="transmission">
         <h3>데이터 전송</h3>
-        <p>MQTT 프로토콜을 사용하여 데이터를 서버로 전송합니다...</p>
-        <a href="#popup-software3">
-            <img src="images/software_transmission.jpg" alt="데이터 전송 이미지" class="image">
-        </a>
-        <div id="popup-software3" class="popup">
-            <img src="images/software_transmission.jpg" alt="데이터 전송 이미지">
-        </div>
+        <p>데이터를 서버로 전송합니다. JSON으로 파일을 만들어 전송하는 방법을 사용할 계획입니다.</p>
+
+        <p></p>
+
     </section>
 
     <section id="analysis">
         <h3>데이터 분석</h3>
-        <p>서버에서 머신러닝 모델을 통해 타이어 상태를 분석합니다...</p>
-        <a href="#popup-software4">
-            <img src="images/software_analysis.jpg" alt="데이터 분석 이미지" class="image">
-        </a>
-        <div id="popup-software4" class="popup">
-            <img src="images/software_analysis.jpg" alt="데이터 분석 이미지">
-        </div>
+        <p>서버에서 머신러닝 모델을 통해 타이어 상태를 분석합니다.</p>
+        <p>라즈베리파이4 ModelB에서 TensorFlow모델을 올리면 무거워서 실시간 분석이 어려울 수 있을 것이라 판단하여 TensorFlow lite 모델을 올립니다.</p>
+
     </section>
 
     <section id="app">
         <h2>앱 개발</h2>
         <p>Flutter를 사용하여 앱을 개발 중입니다...</p>
-        <a href="#popup-app">
-            <img src="images/app_development.jpg" alt="앱 개발 진행" class="image">
-        </a>
-        <div id="popup-app" class="popup">
-            <img src="images/app_development.jpg" alt="앱 개발 진행">
-        </div>
+
     </section>
 
     <section id="plan">
@@ -267,14 +284,42 @@
             <li>머신러닝 모델 설계 및 앱 개발: 모델 학습 및 테스트, 앱 통합</li>
             <li>통합 및 테스트: 시스템 최적화 및 최종 테스트</li>
         </ul>
-        <a href="#popup-plan">
-            <img src="images/project_plan.jpg" alt="단계별 계획 이미지" class="image">
-        </a>
-        <div id="popup-plan" class="popup">
-            <img src="images/project_plan.jpg" alt="단계별 계획 이미지">
-        </div>
+
     </section>
 </div>
 
+<!-- 팝업 구조 -->
+<div id="popup" class="popup">
+    <div class="popup-content">
+        <a href="#" class="close-popup">&times;</a>
+        <img id="popup-image" src="" alt="">
+        <p id="popup-description"></p>
+    </div>
+</div>
+<script>
+    const popup = document.getElementById('popup');
+    const popupImage = document.getElementById('popup-image');
+    const popupDescription = document.getElementById('popup-description');
+    
+    document.querySelectorAll('.image-container').forEach(container => {
+        container.addEventListener('click', () => {
+            const src = container.getAttribute('data-src');
+            const alt = container.getAttribute('data-alt');
+            
+            popupImage.src = src;
+            popupImage.alt = alt;
+            popupDescription.textContent = alt;
+            
+            popup.style.display = 'flex';
+        });
+    });
+
+    document.querySelector('.close-popup').addEventListener('click', (e) => {
+        e.preventDefault();
+        popup.style.display = 'none';
+    });
+</script>
+
 </body>
+
 </html>
