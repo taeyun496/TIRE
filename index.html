@@ -269,8 +269,8 @@
         <p>고려한 전처리 과정은 노이즈 제거와 정규화 피크 감지, 이상값 제거 등이 있었습니다. 노이즈 제거와 정규화는 머신러닝 과정에서 학습 효율과 분석 효율성 측면에서 필수라고 보았고, 피크 감지 또한 머신 러닝 모델이 충분히 판단할 수 있는 부분이지만 더 마찬가지로 효율에 도움이 되리라 보았습니다. 이상값 제거 또한 한다면 더 효율적인 학습과 분석을 할 수 있으리라 생각하였지만 필요한 데이터 또한 제거될 수 있을 것 같다는 점과 너무 많은 전처리 과정을 거치면 전처리에 시간이 더 소요되어 아래 세 가지 전처리 과정만을 가집니다.</p>
         <h4>이동 평균 필터</h4>
         <p>필터: 이동 평균 필터와 저역 통과 필터를 고려하였으며 구현이 쉬운 이동 평균 필터로 노이즈 제거를 합니다.</p>
-        <div class="image-container" data-src="images/.jpg" data-alt="필터 함수 플로우 차트">
-            <img src="images/.jpg" class="thumbnail" alt="필터 함수 플로우 차트">
+        <div class="image-container" data-src="images/이동평균.jpg" data-alt="필터 함수 플로우 차트">
+            <img src="images/이동평균.jpg" class="thumbnail" alt="필터 함수 플로우 차트">
         </div>
         <p>윈도우 크기 결정 과정</p>
         <ul>
@@ -281,13 +281,13 @@
         <p>따라서 한 회전 내에 충분히 충분히 많은 데이터를 포함하면서, 주행 속도의 변화와 노면의 진동 패턴을 유지할 수 있는 윈도우 사이즈, N = 6 정도가 적절합니다.</p>
         <h4>정규화</h4>
         <p>정규화: 최소 0에서 최대 1로 정규화합니다. 추후 값들이 평균적으로 너무 작거나 크다면 최댓값을 1로 하는 대신 평균을 1로 하거나 또는 0을 평균으로 하여 편차를 1로 설정합니다.</p>
-        <div class="image-container" data-src="images/.jpg" data-alt="정규화 함수 플로우 차트">
-            <img src="images/.jpg" class="thumbnail" alt="정규화 함수 플로우 차트">
+        <div class="image-container" data-src="images/정규화.jpg" data-alt="정규화 함수 플로우 차트">
+            <img src="images/정규화.jpg" class="thumbnail" alt="정규화 함수 플로우 차트">
         </div>
         <h4>피크 감지</h4>
             <p>피크 감지: 특정 값을 초과하는 경우를 피크로 판단하고 피크가 발생한 것을 하나의 이벤트로 데이터에 추가합니다. 평균 또는 편차를 1로 설정하는 경우 2를 초과하는 경우 등이 피크가 될 수 있습니다.</p>
-        <div class="image-container" data-src="images/.jpg" data-alt="피크 감지 플로우 차트">
-            <img src="images/.jpg" class="thumbnail" alt="피크 감지 플로우 차트">
+        <div class="image-container" data-src="images/피크감지.jpg" data-alt="피크 감지 플로우 차트">
+            <img src="images/피크감지.jpg" class="thumbnail" alt="피크 감지 플로우 차트">
         </div>
     </section>
 
