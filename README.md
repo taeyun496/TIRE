@@ -76,8 +76,7 @@ pip install pandas numpy matplotlib seaborn plotly scikit-learn tensorflow jobli
 
 2. 웹소켓 서버 실행
 ```bash
-cd raspberry_pi/websocket
-python websocket_server.py
+cd raspberry_pi/server.py
 ```
 
 #### 모바일 앱 (Flutter)
