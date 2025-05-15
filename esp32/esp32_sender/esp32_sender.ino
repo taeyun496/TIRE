@@ -11,7 +11,7 @@
 #define SCL_PIN 5
 
 // 수집 주기
-#define SAMPLE_INTERVAL_MS 7
+#define SAMPLE_INTERVAL_MS 32
 
 // 수신기 MAC 주소
 uint8_t receiverMac[] = {0x9C, 0x9E, 0x6E, 0xB8, 0x8F, 0xE4};
