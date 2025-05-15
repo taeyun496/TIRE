@@ -15,7 +15,7 @@ BUTTON_PIN = 17               # Button pin (GPIO17)
 LED_PIN = 18                  # LED pin (GPIO18)
 DATA_DIR = 'sensor_data'      # Folder to save files
 COLLECTION_TIME = 60          # Save time in seconds
-DATA_INTERVAL = 0.010         # Expected gap between data lines (seconds)
+DATA_INTERVAL = 0.035         # Expected gap between data lines (seconds)
 EXPECTED_COLUMNS = 8          # Total data parts (1 prefix + 7 values)
 DEBUG_MODE = True             # Show print log or not
 
