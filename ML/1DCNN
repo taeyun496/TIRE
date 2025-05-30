@@ -1,0 +1,587 @@
+# Google Colab용 타이어 공기압 예측 1D CNN 모델
+# 사용법: Google Colab에서 이 코드를 복사하여 실행하세요
+
+# 필요한 패키지 설치
+# !pip install tensorflow numpy pandas scikit-learn matplotlib seaborn scipy
+
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Conv1D, MaxPooling1D, GlobalAveragePooling1D, Dense, Dropout, Concatenate, BatchNormalization
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_absolute_error, accuracy_score
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import signal
+from scipy.stats import skew, kurtosis
+import os
+import glob
+import warnings
+import zipfile
+from google.colab import files
+import io
+
+warnings.filterwarnings('ignore')
+
+# GPU 사용 가능 여부 확인
+print("TensorFlow version:", tf.__version__)
+print("GPU Available: ", tf.config.list_physical_devices('GPU'))
+
+class TirePressurePredictor:
+    def __init__(self, sequence_length=1000, step_size=500):
+        self.sequence_length = sequence_length
+        self.step_size = step_size
+        self.scaler_raw = StandardScaler()
+        self.scaler_features = StandardScaler()
+        self.model = None
+        
+    def upload_and_extract_data(self):
+        """Google Colab에서 데이터 파일 업로드 및 압축 해제"""
+        print("데이터 파일을 업로드해주세요.")
+        print("옵션 1: mpudata 폴더를 zip으로 압축하여 업로드")
+        print("옵션 2: CSV 파일들을 개별적으로 업로드")
+        
+        choice = input("압축 파일을 업로드하시겠습니까? (y/n): ").lower()
+        
+        if choice == 'y':
+            print("ZIP 파일을 선택해주세요:")
+            uploaded = files.upload()
+            
+            # ZIP 파일 압축 해제
+            for filename in uploaded.keys():
+                if filename.endswith('.zip'):
+                    with zipfile.ZipFile(filename, 'r') as zip_ref:
+                        zip_ref.extractall('.')
+                    print(f"압축 해제 완료: {filename}")
+                    
+                    # mpudata 폴더 확인
+                    if os.path.exists('mpudata'):
+                        print("mpudata 폴더를 찾았습니다.")
+                        return 'mpudata'
+                    else:
+                        # 압축 해제된 파일들 확인
+                        csv_files = glob.glob('*.csv')
+                        if csv_files:
+                            os.makedirs('mpudata', exist_ok=True)
+                            for csv_file in csv_files:
+                                if 'mpu_data' in csv_file and 'psi' in csv_file:
+                                    os.rename(csv_file, f'mpudata/{csv_file}')
+                            print("CSV 파일들을 mpudata 폴더로 이동했습니다.")
+                            return 'mpudata'
+        else:
+            print("CSV 파일들을 선택해주세요 (여러 파일 선택 가능):")
+            uploaded = files.upload()
+            
+            # 업로드된 파일들을 mpudata 폴더로 이동
+            os.makedirs('mpudata', exist_ok=True)
+            for filename in uploaded.keys():
+                if filename.endswith('.csv') and 'mpu_data' in filename and 'psi' in filename:
+                    # 파일을 mpudata 폴더로 이동
+                    with open(f'mpudata/{filename}', 'wb') as f:
+                        f.write(uploaded[filename])
+                    print(f"파일 저장: mpudata/{filename}")
+            
+            return 'mpudata'
+        
+        return None
+    
+    def load_data(self, data_folder='mpudata'):
+        """데이터 로드 및 전처리"""
+        all_data = []
+        all_labels = []
+        
+        # 폴더가 없으면 업로드 시도
+        if not os.path.exists(data_folder):
+            print(f"{data_folder} 폴더를 찾을 수 없습니다. 데이터를 업로드해주세요.")
+            data_folder = self.upload_and_extract_data()
+            if data_folder is None:
+                raise ValueError("데이터 폴더를 찾을 수 없습니다.")
+        
+        # 각 압력별 파일 로드
+        for pressure in [35, 50, 60]:
+            files_list = glob.glob(f"{data_folder}/mpu_data_{pressure}psi_*.csv")
+            print(f"Loading {pressure}psi data: {len(files_list)} files")
+            
+            if len(files_list) == 0:
+                print(f"Warning: {pressure}psi 데이터 파일을 찾을 수 없습니다.")
+                continue
+            
+            for file in files_list:
+                try:
+                    df = pd.read_csv(file)
+                    print(f"Loaded {file}: {len(df)} rows")
+                    
+                    # 센서 데이터만 추출 (timestamp 제외)
+                    sensor_data = df[['accelX', 'accelY', 'accelZ', 'gyroX', 'gyroY', 'gyroZ']].values
+                    
+                    # 슬라이딩 윈도우로 시퀀스 생성
+                    sequences_from_file = 0
+                    for i in range(0, len(sensor_data) - self.sequence_length + 1, self.step_size):
+                        sequence = sensor_data[i:i + self.sequence_length]
+                        all_data.append(sequence)
+                        all_labels.append(pressure)
+                        sequences_from_file += 1
+                    
+                    print(f"  Generated {sequences_from_file} sequences from {file}")
+                    
+                except Exception as e:
+                    print(f"Error loading {file}: {e}")
+        
+        if len(all_data) == 0:
+            raise ValueError("데이터를 로드할 수 없습니다. 파일 형식을 확인해주세요.")
+        
+        return np.array(all_data), np.array(all_labels)
+    
+    def extract_time_domain_features(self, sequence):
+        """시간 도메인 특성 추출"""
+        features = []
+        
+        for channel in range(sequence.shape[1]):  # 6개 채널
+            data = sequence[:, channel]
+            
+            # 기본 통계량
+            features.extend([
+                np.mean(data),           # 평균
+                np.std(data),            # 표준편차
+                np.max(data),            # 최대값
+                np.min(data),            # 최소값
+                np.sqrt(np.mean(data**2)), # RMS
+                skew(data),              # 왜도
+                kurtosis(data),          # 첨도
+                np.ptp(data),            # Peak-to-peak
+                np.percentile(data, 25), # 1사분위수
+                np.percentile(data, 75), # 3사분위수
+            ])
+        
+        return np.array(features)
+    
+    def extract_frequency_domain_features(self, sequence, fs=28.6):
+        """주파수 도메인 특성 추출"""
+        features = []
+        
+        for channel in range(sequence.shape[1]):  # 6개 채널
+            data = sequence[:, channel]
+            
+            # FFT 계산
+            fft = np.fft.fft(data)
+            freqs = np.fft.fftfreq(len(data), 1/fs)
+            
+            # 양의 주파수만 사용
+            positive_freqs = freqs[:len(freqs)//2]
+            positive_fft = np.abs(fft[:len(fft)//2])
+            
+            # 주파수 대역별 파워
+            freq_bands = [(0, 2), (2, 5), (5, 10), (10, 15)]
+            for low, high in freq_bands:
+                band_mask = (positive_freqs >= low) & (positive_freqs < high)
+                band_power = np.sum(positive_fft[band_mask]**2)
+                features.append(band_power)
+            
+            # 지배 주파수
+            dominant_freq_idx = np.argmax(positive_fft)
+            dominant_freq = positive_freqs[dominant_freq_idx]
+            features.append(dominant_freq)
+            
+            # 스펙트럼 중심 주파수
+            spectral_centroid = np.sum(positive_freqs * positive_fft) / np.sum(positive_fft)
+            features.append(spectral_centroid)
+            
+            # 총 파워
+            total_power = np.sum(positive_fft**2)
+            features.append(total_power)
+            
+            # 스펙트럼 롤오프 (95% 에너지 포함하는 주파수)
+            cumsum_power = np.cumsum(positive_fft**2)
+            rolloff_idx = np.where(cumsum_power >= 0.95 * total_power)[0]
+            if len(rolloff_idx) > 0:
+                spectral_rolloff = positive_freqs[rolloff_idx[0]]
+            else:
+                spectral_rolloff = positive_freqs[-1]
+            features.append(spectral_rolloff)
+        
+        return np.array(features)
+    
+    def extract_all_features(self, sequences):
+        """모든 특성 추출"""
+        time_features = []
+        freq_features = []
+        
+        print("Extracting features...")
+        for i, seq in enumerate(sequences):
+            if i % 100 == 0:
+                print(f"Processing sequence {i}/{len(sequences)}")
+            
+            time_feat = self.extract_time_domain_features(seq)
+            freq_feat = self.extract_frequency_domain_features(seq)
+            
+            time_features.append(time_feat)
+            freq_features.append(freq_feat)
+        
+        return np.array(time_features), np.array(freq_features)
+    
+    def build_model(self, input_shape_raw, input_shape_features):
+        """1D CNN 모델 구축"""
+        # 원시 데이터 입력 브랜치
+        raw_input = Input(shape=input_shape_raw, name='raw_input')
+        
+        # 1D CNN layers
+        x1 = Conv1D(32, 3, activation='relu', padding='same')(raw_input)
+        x1 = BatchNormalization()(x1)
+        x1 = MaxPooling1D(2)(x1)
+        
+        x1 = Conv1D(64, 3, activation='relu', padding='same')(x1)
+        x1 = BatchNormalization()(x1)
+        x1 = MaxPooling1D(2)(x1)
+        
+        x1 = Conv1D(128, 3, activation='relu', padding='same')(x1)
+        x1 = BatchNormalization()(x1)
+        x1 = MaxPooling1D(2)(x1)
+        
+        x1 = Conv1D(256, 3, activation='relu', padding='same')(x1)
+        x1 = BatchNormalization()(x1)
+        x1 = GlobalAveragePooling1D()(x1)
+        
+        # 특성 입력 브랜치
+        feature_input = Input(shape=input_shape_features, name='feature_input')
+        x2 = Dense(128, activation='relu')(feature_input)
+        x2 = BatchNormalization()(x2)
+        x2 = Dropout(0.3)(x2)
+        
+        x2 = Dense(64, activation='relu')(x2)
+        x2 = BatchNormalization()(x2)
+        x2 = Dropout(0.3)(x2)
+        
+        # 두 브랜치 결합
+        combined = Concatenate()([x1, x2])
+        
+        # 최종 분류 레이어
+        x = Dense(128, activation='relu')(combined)
+        x = BatchNormalization()(x)
+        x = Dropout(0.5)(x)
+        
+        x = Dense(64, activation='relu')(x)
+        x = BatchNormalization()(x)
+        x = Dropout(0.3)(x)
+        
+        # 회귀 출력 (공기압 값 예측)
+        output = Dense(1, activation='linear', name='pressure_output')(x)
+        
+        model = Model(inputs=[raw_input, feature_input], outputs=output)
+        
+        model.compile(
+            optimizer=Adam(learning_rate=0.001),
+            loss='mse',
+            metrics=['mae']
+        )
+        
+        return model
+    
+    def train(self, X_raw, X_features, y, validation_split=0.2, epochs=100, batch_size=32):
+        """모델 훈련"""
+        # 데이터 분할
+        X_raw_train, X_raw_val, X_feat_train, X_feat_val, y_train, y_val = train_test_split(
+            X_raw, X_features, y, test_size=validation_split, random_state=42, stratify=y
+        )
+        
+        # 데이터 정규화
+        X_raw_train_scaled = self.scaler_raw.fit_transform(
+            X_raw_train.reshape(-1, X_raw_train.shape[-1])
+        ).reshape(X_raw_train.shape)
+        
+        X_raw_val_scaled = self.scaler_raw.transform(
+            X_raw_val.reshape(-1, X_raw_val.shape[-1])
+        ).reshape(X_raw_val.shape)
+        
+        X_feat_train_scaled = self.scaler_features.fit_transform(X_feat_train)
+        X_feat_val_scaled = self.scaler_features.transform(X_feat_val)
+        
+        # 모델 구축
+        self.model = self.build_model(
+            input_shape_raw=(X_raw_train.shape[1], X_raw_train.shape[2]),
+            input_shape_features=(X_feat_train.shape[1],)
+        )
+        
+        print(self.model.summary())
+        
+        # 콜백 설정
+        callbacks = [
+            EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True),
+            ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=8, min_lr=1e-6)
+        ]
+        
+        # 훈련
+        history = self.model.fit(
+            [X_raw_train_scaled, X_feat_train_scaled], y_train,
+            validation_data=([X_raw_val_scaled, X_feat_val_scaled], y_val),
+            epochs=epochs,
+            batch_size=batch_size,
+            callbacks=callbacks,
+            verbose=1
+        )
+        
+        return history
+    
+    def predict(self, X_raw, X_features):
+        """예측"""
+        X_raw_scaled = self.scaler_raw.transform(
+            X_raw.reshape(-1, X_raw.shape[-1])
+        ).reshape(X_raw.shape)
+        
+        X_feat_scaled = self.scaler_features.transform(X_features)
+        
+        predictions = self.model.predict([X_raw_scaled, X_feat_scaled])
+        return predictions.flatten()
+    
+    def evaluate_model(self, X_raw, X_features, y_true):
+        """모델 평가"""
+        y_pred = self.predict(X_raw, X_features)
+        
+        # 회귀 메트릭
+        mae = mean_absolute_error(y_true, y_pred)
+        mse = np.mean((y_true - y_pred)**2)
+        rmse = np.sqrt(mse)
+        
+        # 분류 정확도 (±5 오차 허용)
+        tolerance = 5
+        correct_predictions = np.abs(y_true - y_pred) <= tolerance
+        accuracy = np.mean(correct_predictions)
+        
+        print(f"Mean Absolute Error: {mae:.2f}")
+        print(f"Root Mean Square Error: {rmse:.2f}")
+        print(f"Accuracy (±{tolerance} tolerance): {accuracy:.3f}")
+        
+        # 각 클래스별 정확도
+        for pressure in [35, 50, 60]:
+            mask = y_true == pressure
+            if np.sum(mask) > 0:
+                class_accuracy = np.mean(np.abs(y_pred[mask] - y_true[mask]) <= tolerance)
+                print(f"Accuracy for {pressure}psi: {class_accuracy:.3f}")
+        
+        return {
+            'mae': mae,
+            'rmse': rmse,
+            'accuracy': accuracy,
+            'predictions': y_pred
+        }
+    
+    def plot_results(self, history, y_true, y_pred):
+        """결과 시각화"""
+        fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+        
+        # 훈련 히스토리
+        axes[0, 0].plot(history.history['loss'], label='Training Loss')
+        axes[0, 0].plot(history.history['val_loss'], label='Validation Loss')
+        axes[0, 0].set_title('Model Loss')
+        axes[0, 0].set_xlabel('Epoch')
+        axes[0, 0].set_ylabel('Loss')
+        axes[0, 0].legend()
+        
+        axes[0, 1].plot(history.history['mae'], label='Training MAE')
+        axes[0, 1].plot(history.history['val_mae'], label='Validation MAE')
+        axes[0, 1].set_title('Model MAE')
+        axes[0, 1].set_xlabel('Epoch')
+        axes[0, 1].set_ylabel('MAE')
+        axes[0, 1].legend()
+        
+        # 예측 vs 실제
+        axes[1, 0].scatter(y_true, y_pred, alpha=0.6)
+        axes[1, 0].plot([y_true.min(), y_true.max()], [y_true.min(), y_true.max()], 'r--', lw=2)
+        axes[1, 0].set_xlabel('True Pressure')
+        axes[1, 0].set_ylabel('Predicted Pressure')
+        axes[1, 0].set_title('Predictions vs True Values')
+        
+        # 오차 분포
+        errors = y_pred - y_true
+        axes[1, 1].hist(errors, bins=30, alpha=0.7)
+        axes[1, 1].axvline(x=0, color='r', linestyle='--')
+        axes[1, 1].set_xlabel('Prediction Error')
+        axes[1, 1].set_ylabel('Frequency')
+        axes[1, 1].set_title('Error Distribution')
+        
+        plt.tight_layout()
+        plt.show()
+        
+        # 혼동 행렬 스타일 시각화 (±5 허용 오차)
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+        
+        # 예측 결과를 클래스로 변환 (가장 가까운 압력값으로)
+        def classify_pressure(pred):
+            pressures = [35, 50, 60]
+            return pressures[np.argmin([abs(pred - p) for p in pressures])]
+        
+        y_pred_class = [classify_pressure(p) for p in y_pred]
+        
+        # 정확도 매트릭스 생성
+        pressures = [35, 50, 60]
+        accuracy_matrix = np.zeros((3, 3))
+        
+        for i, true_p in enumerate(pressures):
+            for j, pred_p in enumerate(pressures):
+                true_mask = y_true == true_p
+                pred_mask = np.array(y_pred_class) == pred_p
+                accuracy_matrix[i, j] = np.sum(true_mask & pred_mask)
+        
+        # 정규화
+        accuracy_matrix = accuracy_matrix / accuracy_matrix.sum(axis=1, keepdims=True)
+        
+        im = ax.imshow(accuracy_matrix, interpolation='nearest', cmap=plt.cm.Blues)
+        ax.figure.colorbar(im, ax=ax)
+        
+        ax.set(xticks=np.arange(3),
+               yticks=np.arange(3),
+               xticklabels=pressures,
+               yticklabels=pressures,
+               title="Classification Accuracy Matrix",
+               ylabel='True Pressure',
+               xlabel='Predicted Pressure')
+        
+        # 텍스트 추가
+        thresh = accuracy_matrix.max() / 2.
+        for i in range(3):
+            for j in range(3):
+                ax.text(j, i, format(accuracy_matrix[i, j], '.2f'),
+                       ha="center", va="center",
+                       color="white" if accuracy_matrix[i, j] > thresh else "black")
+        
+        plt.tight_layout()
+        plt.show()
+
+def main():
+    print("=== 타이어 공기압 예측 1D CNN 모델 ===")
+    print("Google Colab 버전")
+    print()
+    
+    # 모델 초기화
+    predictor = TirePressurePredictor(sequence_length=1000, step_size=500)
+    
+    # 데이터 로드
+    print("Loading data...")
+    X_raw, y = predictor.load_data()
+    print(f"Raw data shape: {X_raw.shape}")
+    print(f"Labels shape: {y.shape}")
+    
+    # 라벨 분포 확인
+    unique, counts = np.unique(y, return_counts=True)
+    print(f"Label distribution:")
+    for pressure, count in zip(unique, counts):
+        print(f"  {pressure}psi: {count} sequences")
+    
+    # 특성 추출
+    print("\nExtracting features...")
+    X_time_features, X_freq_features = predictor.extract_all_features(X_raw)
+    X_features = np.concatenate([X_time_features, X_freq_features], axis=1)
+    print(f"Time domain features shape: {X_time_features.shape}")
+    print(f"Frequency domain features shape: {X_freq_features.shape}")
+    print(f"Combined features shape: {X_features.shape}")
+    
+    # 모델 훈련
+    print("\nTraining model...")
+    history = predictor.train(X_raw, X_features, y, epochs=50, batch_size=32)  # Colab에서는 epoch 수 줄임
+    
+    # 전체 데이터에 대한 평가
+    print("\nEvaluating on full dataset...")
+    results = predictor.evaluate_model(X_raw, X_features, y)
+    
+    # 결과 시각화
+    predictor.plot_results(history, y, results['predictions'])
+    
+    # 모델 저장
+    predictor.model.save('tire_pressure_model.h5')
+    print("\nModel saved as 'tire_pressure_model.h5'")
+    
+    # 모델 다운로드
+    print("\n모델 파일을 다운로드하시겠습니까?")
+    download_choice = input("y/n: ").lower()
+    if download_choice == 'y':
+        files.download('tire_pressure_model.h5')
+    
+    return predictor, results
+
+# 실행
+if __name__ == "__main__":
+    predictor, results = main()
+
+# 추가 분석 함수들
+def analyze_feature_importance(predictor, X_features, y):
+    """특성 중요도 분석"""
+    from sklearn.ensemble import RandomForestRegressor
+    
+    print("\n=== 특성 중요도 분석 ===")
+    
+    # Random Forest로 특성 중요도 계산
+    rf = RandomForestRegressor(n_estimators=100, random_state=42)
+    rf.fit(X_features, y)
+    
+    # 특성 이름 생성
+    feature_names = []
+    channels = ['accelX', 'accelY', 'accelZ', 'gyroX', 'gyroY', 'gyroZ']
+    time_features = ['mean', 'std', 'max', 'min', 'rms', 'skew', 'kurtosis', 'ptp', 'q25', 'q75']
+    freq_features = ['band_0-2Hz', 'band_2-5Hz', 'band_5-10Hz', 'band_10-15Hz', 
+                     'dominant_freq', 'spectral_centroid', 'total_power', 'spectral_rolloff']
+    
+    for channel in channels:
+        for feat in time_features:
+            feature_names.append(f'{channel}_{feat}')
+    
+    for channel in channels:
+        for feat in freq_features:
+            feature_names.append(f'{channel}_{feat}')
+    
+    # 중요도 시각화
+    importances = rf.feature_importances_
+    indices = np.argsort(importances)[::-1]
+    
+    plt.figure(figsize=(12, 8))
+    plt.title("Feature Importance (Top 20)")
+    plt.bar(range(20), importances[indices[:20]])
+    plt.xticks(range(20), [feature_names[i] for i in indices[:20]], rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
+    
+    # 상위 10개 특성 출력
+    print("Top 10 most important features:")
+    for i in range(10):
+        idx = indices[i]
+        print(f"{i+1:2d}. {feature_names[idx]:30s}: {importances[idx]:.4f}")
+
+def test_single_prediction(predictor, X_raw, X_features, y, index=0):
+    """단일 샘플 예측 테스트"""
+    print(f"\n=== 단일 샘플 예측 테스트 (Index: {index}) ===")
+    
+    # 단일 샘플 선택
+    sample_raw = X_raw[index:index+1]
+    sample_features = X_features[index:index+1]
+    true_pressure = y[index]
+    
+    # 예측
+    predicted_pressure = predictor.predict(sample_raw, sample_features)[0]
+    
+    print(f"실제 공기압: {true_pressure} psi")
+    print(f"예측 공기압: {predicted_pressure:.2f} psi")
+    print(f"오차: {abs(predicted_pressure - true_pressure):.2f} psi")
+    print(f"정확도 (±5 허용): {'정답' if abs(predicted_pressure - true_pressure) <= 5 else '오답'}")
+    
+    # 원시 데이터 시각화
+    plt.figure(figsize=(15, 8))
+    
+    channels = ['accelX', 'accelY', 'accelZ', 'gyroX', 'gyroY', 'gyroZ']
+    for i, channel in enumerate(channels):
+        plt.subplot(2, 3, i+1)
+        plt.plot(sample_raw[0, :, i])
+        plt.title(f'{channel} (True: {true_pressure}psi, Pred: {predicted_pressure:.1f}psi)')
+        plt.xlabel('Time')
+        plt.ylabel('Value')
+    
+    plt.tight_layout()
+    plt.show()
+
+print("\n=== 추가 분석 함수 사용법 ===")
+print("1. 특성 중요도 분석: analyze_feature_importance(predictor, X_features, y)")
+print("2. 단일 샘플 테스트: test_single_prediction(predictor, X_raw, X_features, y, index=0)")
+print("\n예시:")
+print("analyze_feature_importance(predictor, X_features, y)")
+print("test_single_prediction(predictor, X_raw, X_features, y, index=10)") 
