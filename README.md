@@ -171,8 +171,13 @@ TIRE/
 ├── 📁 analysis/                 # 데이터 분석 코드
 ├── 📁 mpudata/                  # 수집된 원시 데이터
 ├── 📁 report/                   # 연구 보고서 (LaTeX)
-│   ├── main윤 - 머신러닝 모델 개발
-- 조서영 - 모바일 앱 개발
+│   ├── main
+
+## ✋ **역할 분배**
+🐆- 김수민 - 시스템 아키텍처 설계
+🐦‍⬛- 김예진 - 하드웨어 설계
+🐋- 이태윤 - 머신러닝 모델 개발
+🦩- 조서영 - 모바일 앱 개발
 
 ## 📚 참고 문헌
 
@@ -181,24 +186,7 @@ TIRE/
 3. **센서 융합**: "Sensor Fusion: Architectures, Algorithms, and Applications" - IEEE
 4. **머신러닝**: "Pattern Recognition and Machine Learning" - Christopher Bishop
 
-## 📄 라이선스
 
-이 프로젝트는 MIT 라이선스 하에 제공됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
-
-## 🤝 기여하기
-
-프로젝트에 기여하고 싶으시다면:
-1. 이 저장소를 Fork 해주세요
-2. 새로운 기능 브랜치를 생성하세요 (`git checkout -b feature/AmazingFeature`)
-3. 변경사항을 커밋하세요 (`git commit -m 'Add some AmazingFeature'`)
-4. 브랜치에 Push 하세요 (`git push origin feature/AmazingFeature`)
-5. Pull Request를 열어주세요
-
-## 📞 연락처
-
-프로젝트에 대한 문의사항이나 협업 제안은 언제든 환영합니다!
-
-**Email**: rimind@ulsan.ac.kr  
 **University**: 울산대학교 전기공학부  
 **Location**: 울산광역시, 대한민국
 
