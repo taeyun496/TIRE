@@ -9,6 +9,8 @@
   [![ESP32](https://img.shields.io/badge/ESP32-C3-red.svg)](https://www.espressif.com/en/products/socs/esp32-c3)
 </div>
 
+## 프로젝트 보고서 https://drive.google.com/file/d/1LsaeWvdORJ3O5EIxwlHHkBPA0IoC25rQ/view?usp=drive_link
+
 ## 📋 프로젝트 개요
 
 **TIRE**는 MPU6050 가속도 센서와 ESP32 마이크로컨트롤러를 활용하여 자전거 타이어 공기압을 실시간으로 진단하는 스마트 모니터링 시스템입니다. 머신러닝을 통해 타이어 상태를 분석하고, Flutter 앱을 통해 직관적인 사용자 경험을 제공합니다.
